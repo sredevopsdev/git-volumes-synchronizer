@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ghostk3s
+  namespace: gitsync
+  labels:
+    app: ghostk3s
+spec:
+  ports:
+  - port: 2368
+    protocol: TCP
+    targetPort: 2368
+    name: ghostk3s
+  type: ClusterIP
+  selector:
+    app: ghostk3s
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-gitsync
+  namespace: gitsync
+  labels:
+    app: mysql-gitsync
+spec:
+  ports:
+  - port: 3306
+    protocol: TCP
+    targetPort: 3306
+    name: mysql-gitsync
+  type: ClusterIP
+  selector:
+    app: mysql-gitsync

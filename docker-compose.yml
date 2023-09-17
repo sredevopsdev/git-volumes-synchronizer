@@ -1,0 +1,12 @@
+version: '3.3'
+services:
+  git:
+    build:
+      context: .
+    image: ghcr.io/sredevopsdev/git-volumes-synchronizer:latest
+    container_name: git
+    restart: no
+    env_file:
+      - .env
+    volumes:
+      - ./content:/home/gituser:rw
