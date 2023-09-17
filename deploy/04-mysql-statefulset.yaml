@@ -88,7 +88,7 @@ spec:
         volumeMounts:
         - name: mysql-from-git
           mountPath: /var/lib/mysql # this is the path where mysql stores its data
-          subPath: mysql # this is the path where the git-sync container will store the mysql data
+          subPath: content/mysql # this is the path where the git-sync container will store the mysql data
           readOnly: false
 
         securityContext:

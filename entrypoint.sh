@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# Set verbose mode 
-set -x 
+set -e
 export GIT_USERNAME="$GIT_USERNAME"
 export GIT_TOKEN="$GIT_TOKEN"
 export GIT_SSH_PRIVATE_KEY_BASE64="$GIT_SSH_PRIVATE_KEY_BASE64"
@@ -34,19 +33,37 @@ fi
 if [ -n "$GIT_USER_EMAIL" ]; then
   git config --global user.email "$GIT_USER_EMAIL"
 fi
+
 # Check if the subdir "content" is a git repository. For true: pull, add, commit, and push every $GIT_SYNC_INTERVAL to $GIT_REPO_URL with $GIT_BRANCH branch name. For false: clone $GIT_REPO_URL with $GIT_BRANCH branch name into "content", and push every $GIT_SYNC_INTERVAL to $GIT_REPO_URL with $GIT_BRANCH branch name.
+
 if [ -d "/home/gituser/content/.git" ]; then
   cd /home/gituser/content || exit
   while true; do
-    git pull
-    git add .
-    git commit -m "Update from gitsync at $(date)"
-    git push
+    if ! git pull; then
+      echo "Error: Failed to pull changes from remote repository" >&2
+      exit 1
+    fi
+    if ! git add .; then
+      echo "Error: Failed to add changes to local repository" >&2
+      exit 1
+    fi
+    if ! git commit -m "Update from gitsync at $(date)"; then
+      echo "Error: Failed to commit changes to local repository" >&2
+      exit 1
+    fi
+    if ! git push; then
+      echo "Error: Failed to push changes to remote repository" >&2
+      exit 1
+    fi
+    echo "Changes synced successfully at $(date)"
     sleep "$GIT_SYNC_INTERVAL"
   done
 else
-  # rm -rf /home/gituser/content || true
-  git clone --single-branch --branch "$GIT_BRANCH" "$GIT_REPO_URL" /home/gituser/content || exit
-
+  if ! git clone --single-branch --branch "$GIT_BRANCH" "$GIT_REPO_URL" /home/gituser/content; then
+    echo "Error: Failed to clone remote repository" >&2
+    exit 1
+  fi
+  echo "Repository cloned successfully at $(date)"
 fi
 
+exit 0
