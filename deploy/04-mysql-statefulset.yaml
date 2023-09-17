@@ -23,7 +23,9 @@ spec:
         fsGroup: 27 # "27" is the GID for mysql docker.io/mysql/mysql-server:8.0.32-1.2.11-server
       volumes:
       - name: mysql-from-git
-        emptyDir: {}
+        emptyDir:
+          sizeLimit: "2Gi"
+          medium: ""
 
       initContainers:
       - name: git-sync-init
@@ -43,35 +45,7 @@ spec:
         - name: mysql-from-git
           mountPath: /home/gituser # this is the path where the git-sync container will store the mysql data
           readOnly: false
-
-
-      # - name: git-sync
-      #   envFrom:
-      #   - secretRef:
-      #       name: git-credentials-repo # git-credentials-repo is the name of the secret containing the git credentials GITSYNC_PASSWORD and GITSYNC_USERNAME
-      #   # This container pulls git data and publishes it into volume
-      #   # "mysql-from-git".  In that volume you will find a symlink
-      #   # "current" (see -dest below) which points to a checked-out copy of
-      #   # the master branch (see -branch) of the repo (see -repo).
-      #   # NOTE: git-sync already runs as non-root.
-      #   image: registry.k8s.io/git-sync/git-sync:v4.0.0
-      #   args:
-      #   - --repo=https://github.com/sredevopsdev/gitsync-mysql-tests
-      #   - --max-failures=3
-      #   - --link=current
-      #   - --root=/git
-      #   - --group-write
-      #   - --ref=main
-      #   - --one-time # run once and exit, then other containers in the pod will start
-
-      #   volumeMounts:
-      #   - name: mysql-from-git
-      #     mountPath: /git
-
-      #   resources:
-      #     limits:
-      #       cpu: 500m
-      #       memory: 500Mi
+          mountPropagation: HostToContainer
 
       containers:
       - name: mysql-gitsync
@@ -88,13 +62,16 @@ spec:
         volumeMounts:
         - name: mysql-from-git
           mountPath: /var/lib/mysql # this is the path where mysql stores its data
-          subPath: content/mysql # this is the path where the git-sync container will store the mysql data
+          subPath: content/mysql # subpath relative to the volume defined in the container image and in this case a subfolder in the repo itself
           readOnly: false
+          mountPropagation: HostToContainer
+
 
         securityContext:
           readOnlyRootFilesystem: false # mysql needs to write to its data directory
           runAsGroup: 27 # "27" is the GID for mysql docker.io/mysql/mysql-server:8.0.32-1.2.11-server
           runAsNonRoot: false # mysql needs to run as root
+
 
         resources:
           limits:
@@ -122,4 +99,7 @@ spec:
         - name: mysql-from-git
           mountPath: /home/gituser # this is the path where the git-sync container will store the mysql data
           readOnly: false
+          mountPropagation: HostToContainer
+
+
 

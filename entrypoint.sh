@@ -41,17 +41,17 @@ if [ -d "/home/gituser/content/.git" ]; then
   while true; do
     if ! git pull; then
       echo "Error: Failed to pull changes from remote repository" >&2
-      exit 1
+      # exit 1
     fi
     if ! git add .; then
       echo "Error: Failed to add changes to local repository" >&2
-      exit 1
+      # exit 1
     fi
     if ! git commit -m "Update from gitsync at $(date)"; then
       echo "Error: Failed to commit changes to local repository" >&2
-      exit 1
+      # exit 1
     fi
-    if ! git push; then
+    if ! git push --set-upstream origin "$GIT_BRANCH"; then
       echo "Error: Failed to push changes to remote repository" >&2
       exit 1
     fi
@@ -59,8 +59,8 @@ if [ -d "/home/gituser/content/.git" ]; then
     sleep "$GIT_SYNC_INTERVAL"
   done
 else
-  if ! git clone --single-branch --branch "$GIT_BRANCH" "$GIT_REPO_URL" /home/gituser/content; then
-    echo "Error: Failed to clone remote repository" >&2
+  if ! git clone --single-branch --branch "$GIT_BRANCH" "$GIT_REPO_URL" /home/gituser/content && chmod -Rf 777 /home/gituser/content; then
+    echo "Error: Failed to clone remote repository $GIT_REPO_URL with branch $GIT_BRANCH" >&2
     exit 1
   fi
   echo "Repository cloned successfully at $(date)"

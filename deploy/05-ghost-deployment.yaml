@@ -21,7 +21,8 @@ spec:
       volumes:
       - name: ghost-from-git
         emptyDir:
-          sizeLimit: "10Gi"
+          sizeLimit: 5Gi
+
 
       - name: ghost-config-prod
         secret:
@@ -51,6 +52,8 @@ spec:
         - name: ghost-from-git
           mountPath: /home/gituser # this is the path where the git-sync container will store the mysql data
           readOnly: false
+          mountPropagation: HostToContainer
+
 
 
 
@@ -92,6 +95,8 @@ spec:
         - name: ghost-from-git
           mountPath: /var/lib/ghost/content
           subPath: content
+          readOnly: false
+          mountPropagation: HostToContainer
 
         - name: ghost-config-prod
           mountPath: /var/lib/ghost/config.production.json
@@ -101,3 +106,25 @@ spec:
         - name: tmp
           mountPath: /tmp
           readOnly: false
+      # sidecarContainers:
+      - name: git-sync-sidecar
+        image: ghcr.io/sredevopsdev/git-volumes-synchronizer:latest
+        imagePullPolicy: Always
+        envFrom:
+        - secretRef:
+            name: git-sync-ghost # git-credentials-repo is the name of the secret containing the git credentials GITSYNC_PASSWORD and GITSYNC_USERNAME
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        volumeMounts:
+        - name: ghost-from-git
+          mountPath: /home/gituser # this is the path where the git-sync container will store the mysql data
+          readOnly: false
+          mountPropagation: HostToContainer
+
+
+
