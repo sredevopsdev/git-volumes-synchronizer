@@ -47,13 +47,6 @@ if [ -d "/home/gituser/content/.git" ]; then
 else
   # rm -rf /home/gituser/content || true
   git clone --single-branch --branch "$GIT_BRANCH" "$GIT_REPO_URL" /home/gituser/content || exit
-  cd /home/gituser/content || exit
-  while true; do
-    git pull
-    git add .
-    git commit -m "Update from gitsync at $(date)"
-    git push
-    sleep "$GIT_SYNC_INTERVAL"
-  done
+
 fi
 

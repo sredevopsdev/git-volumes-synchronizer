@@ -24,34 +24,54 @@ spec:
       volumes:
       - name: mysql-from-git
         emptyDir: {}
+
       initContainers:
-      - name: git-sync
+      - name: git-sync-init
+        image: ghcr.io/sredevopsdev/git-volumes-synchronizer:latest
+        imagePullPolicy: Always
         envFrom:
         - secretRef:
-            name: git-credentials-repo # git-credentials-repo is the name of the secret containing the git credentials GITSYNC_PASSWORD and GITSYNC_USERNAME
-        # This container pulls git data and publishes it into volume
-        # "mysql-from-git".  In that volume you will find a symlink
-        # "current" (see -dest below) which points to a checked-out copy of
-        # the master branch (see -branch) of the repo (see -repo).
-        # NOTE: git-sync already runs as non-root.
-        image: registry.k8s.io/git-sync/git-sync:v4.0.0
-        args:
-        - --repo=https://github.com/sredevopsdev/gitsync-mysql-tests
-        - --max-failures=3
-        - --link=current
-        - --root=/git
-        - --group-write
-        - --ref=main
-        - --one-time # run once and exit, then other containers in the pod will start
-
-        volumeMounts:
-        - name: mysql-from-git
-          mountPath: /git
-
+            name: git-sync-credentials # git-credentials-repo is the name of the secret containing the git credentials GITSYNC_PASSWORD and GITSYNC_USERNAME
         resources:
           limits:
-            cpu: 500m
-            memory: 500Mi
+            cpu: 1000m
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        volumeMounts:
+        - name: mysql-from-git
+          mountPath: /home/gituser # this is the path where the git-sync container will store the mysql data
+          readOnly: false
+
+
+      # - name: git-sync
+      #   envFrom:
+      #   - secretRef:
+      #       name: git-credentials-repo # git-credentials-repo is the name of the secret containing the git credentials GITSYNC_PASSWORD and GITSYNC_USERNAME
+      #   # This container pulls git data and publishes it into volume
+      #   # "mysql-from-git".  In that volume you will find a symlink
+      #   # "current" (see -dest below) which points to a checked-out copy of
+      #   # the master branch (see -branch) of the repo (see -repo).
+      #   # NOTE: git-sync already runs as non-root.
+      #   image: registry.k8s.io/git-sync/git-sync:v4.0.0
+      #   args:
+      #   - --repo=https://github.com/sredevopsdev/gitsync-mysql-tests
+      #   - --max-failures=3
+      #   - --link=current
+      #   - --root=/git
+      #   - --group-write
+      #   - --ref=main
+      #   - --one-time # run once and exit, then other containers in the pod will start
+
+      #   volumeMounts:
+      #   - name: mysql-from-git
+      #     mountPath: /git
+
+      #   resources:
+      #     limits:
+      #       cpu: 500m
+      #       memory: 500Mi
 
       containers:
       - name: mysql-gitsync
@@ -68,7 +88,7 @@ spec:
         volumeMounts:
         - name: mysql-from-git
           mountPath: /var/lib/mysql # this is the path where mysql stores its data
-          subPath: current/mysql # this is the path where the git-sync container will store the mysql data
+          subPath: mysql # this is the path where the git-sync container will store the mysql data
           readOnly: false
 
         securityContext:
@@ -85,16 +105,12 @@ spec:
             memory: "0"
 
       # sidecarContainers:
-      - name: sidecar
-        image: docker.io/ubuntu:mantic
-        command:
-        - /bin/bash
-        - -c
-        - |
-          echo "This is a sidecar container.  It runs a shell and then exits."
-          echo "It is useful for debugging."
-          echo "You can run commands like 'kubectl exec -it mysql-gitsync-0 -c sidecar -- /bin/sh' to debug."
-          sleep 3600
+      - name: git-sync-sidecar
+        image: ghcr.io/sredevopsdev/git-volumes-synchronizer:latest
+        imagePullPolicy: Always
+        envFrom:
+        - secretRef:
+            name: git-sync-credentials # git-credentials-repo is the name of the secret containing the git credentials GITSYNC_PASSWORD and GITSYNC_USERNAME
         resources:
           limits:
             cpu: 1000m
@@ -104,7 +120,6 @@ spec:
             memory: 100Mi
         volumeMounts:
         - name: mysql-from-git
-          mountPath: /git
-          #          subPath: current
+          mountPath: /home/gituser # this is the path where the git-sync container will store the mysql data
           readOnly: false
 

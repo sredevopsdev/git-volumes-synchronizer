@@ -32,36 +32,6 @@ spec:
           medium: ""
           sizeLimit: "512Mi"
 
-      initContainers:
-      - name: git-sync
-        envFrom:
-        - secretRef:
-            name: git-credentials-repo # git-credentials-repo is the name of the secret containing the git credentials GITSYNC_PASSWORD and GITSYNC_USERNAME
-        # This container pulls git data and publishes it into volume
-        # "ghost-from-git".  In that volume you will find a symlink
-        # "current" (see -dest below) which points to a checked-out copy of
-        # the master branch (see -branch) of the repo (see -repo).
-        # NOTE: git-sync already runs as non-root.
-        image: registry.k8s.io/git-sync/git-sync:v4.0.0
-        args:
-        - --repo=https://github.com/sredevopsdev/gitsync-ghost-tests
-        - --max-failures=3
-        - --period=3600s
-        - --link=current
-        - --root=/git
-        - --group-write
-        - --ref=main
-        - --one-time # run once and exit, then other containers in the pod will start
-
-        volumeMounts:
-        - name: ghost-from-git
-          mountPath: /git
-
-        resources:
-          limits:
-            cpu: 500m
-            memory: 500Mi
-
       containers:
       - name: ghostk3s
         image: ghcr.io/sredevopsdev/ghost-on-kubernetes:main
@@ -109,43 +79,3 @@ spec:
         - name: tmp
           mountPath: /tmp
           readOnly: false
-
-      sidecars:
-      - name: git-sidecar
-        image: docker.io/ubuntu:mantic
-        envFrom:
-        - secretRef:
-            name: git-credentials-repo # git-credentials-repo is the name of the secret containing the git credentials GITSYNC_PASSWORD and GITSYNC_USERNAME
-        command: ["git", "commit", "-a", "-m", "Committing changes from mounted volume"]
-        volumeMounts:
-        - name: ghost-from-git
-          mountPath: /git
-          # Add a job to commit changes every 30 minutes
-      jobs:
-      - name: git-commit-job
-        template:
-          spec:
-          containers:
-          - name: git-commit-container
-            image: docker.io/ubuntu:mantic
-            command: ["git", "push"]
-            volumeMounts:
-            - name: ghost-from-git
-              mountPath: /git
-              subPath: current
-              # Add a cronjob to run the job every 30 minutes
-      cronJobs:
-      - name: git-commit-cronjob
-        schedule: "*/30 * * * *"
-        jobTemplate:
-          spec:
-            template:
-              spec:
-                containers:
-                - name: git-commit-container
-                  image: docker.io/ubuntu:mantic
-                  command: ["git", "push"]
-                  volumeMounts:
-                  - name: ghost-from-git
-                    mountPath: /git
-                    subPath: current
