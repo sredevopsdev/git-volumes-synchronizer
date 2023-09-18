@@ -34,10 +34,13 @@ if [ -n "$GIT_USER_EMAIL" ]; then
   git config --global user.email "$GIT_USER_EMAIL"
 fi
 
+
 # Check if the subdir "content" is a git repository. For true: pull, add, commit, and push every $GIT_SYNC_INTERVAL to $GIT_REPO_URL with $GIT_BRANCH branch name. For false: clone $GIT_REPO_URL with $GIT_BRANCH branch name into "content", and push every $GIT_SYNC_INTERVAL to $GIT_REPO_URL with $GIT_BRANCH branch name.
 
 if [ -d "/git/content/.git" ]; then
   cd /git/content || exit
+  #  Add git safe directory
+  git config --global --add safe.directory /git/content
   while true; do
     if ! git pull; then
       echo "Error: Failed to pull changes from remote repository" >&2
