@@ -32,8 +32,6 @@ This repository contains the following features:
 - [deploy/01-secrets.sample.yaml](deploy/01-secrets.sample.yaml)
 
 ```yaml
-
-```yaml
 # deploy/01-secrets.sample.yaml
 apiVersion: v1
 data:
@@ -51,11 +49,13 @@ metadata:
   name: git-credentials-repo
   namespace: gitsync
 ```
-# Example usage
+
+## Example usage
 
 - [deploy/04-mysql-statefulset.yaml](deploy/04-mysql-statefulset.yaml)
 
 ```yaml
+# deploy/04-mysql-statefulset.yaml
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -145,7 +145,7 @@ spec:
         imagePullPolicy: Always
         envFrom:
         - secretRef:
-            name: git-sync-credentials # git-credentials-repo is the name of the secret containing the git credentials GITSYNC_PASSWORD and GITSYNC_USERNAME
+            name: git-sync-credentials # 
         resources:
           limits:
             cpu: 1000m

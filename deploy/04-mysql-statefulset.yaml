@@ -87,7 +87,7 @@ spec:
         imagePullPolicy: Always
         envFrom:
         - secretRef:
-            name: git-sync-credentials # git-credentials-repo is the name of the secret containing the git credentials GITSYNC_PASSWORD and GITSYNC_USERNAME
+            name: git-sync-credentials
         resources:
           limits:
             cpu: 1000m

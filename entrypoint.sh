@@ -8,9 +8,6 @@ export GIT_BRANCH="$GIT_BRANCH"
 export GIT_SYNC_INTERVAL="$GIT_SYNC_INTERVAL"
 export GIT_USER_EMAIL="$GIT_USER_EMAIL"
 
-# sleep 3600
-
-
 # Set up Git credentials
 if [ -n "$GIT_USERNAME" ] && [ -n "$GIT_PASSWORD" ]; then
   git config --global credential.helper "store --file=/git/.git-credentials"
@@ -66,7 +63,7 @@ else
     echo "Error: Failed to clone remote repository $GIT_REPO_URL with branch $GIT_BRANCH" >&2
     exit 1
   fi
-  echo "Repository cloned successfully at $(date)"
+  echo "Cloned $GIT_REPO_URL with branch $GIT_BRANCH successfully at $(date)"
 fi
 
 exit 0
