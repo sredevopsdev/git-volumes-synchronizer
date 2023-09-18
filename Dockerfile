@@ -21,18 +21,17 @@ RUN chmod +x /entrypoint.sh
 
 # Create a non-root user
 RUN useradd -m -s /bin/bash gituser && \
-    mkdir -p /home/gituser && \
-    chown -R gituser:gituser /home/gituser && \
-    chmod 755 /home/gituser
+    mkdir -p /git && \
+    chmod 755 /git
 
 # Create a volume
-VOLUME /home/gituser
+VOLUME /git
 # VOLUME /home/gituser
 
 # Switch to the non-root user
 USER gituser
 # Set the working directory
-WORKDIR /home/gituser
+WORKDIR /git
 
 
 # Set up Git credentials

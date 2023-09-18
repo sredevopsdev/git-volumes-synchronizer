@@ -13,17 +13,17 @@ export GIT_USER_EMAIL="$GIT_USER_EMAIL"
 
 # Set up Git credentials
 if [ -n "$GIT_USERNAME" ] && [ -n "$GIT_PASSWORD" ]; then
-  git config --global credential.helper "store --file=/home/gituser/.git-credentials"
-  printf "https://%s:%s@github.com\n" "$GIT_USERNAME" "$GIT_PASSWORD" > /home/gituser/.git-credentials
+  git config --global credential.helper "store --file=/git/.git-credentials"
+  printf "https://%s:%s@github.com\n" "$GIT_USERNAME" "$GIT_PASSWORD" > /git/.git-credentials
 elif [ -n "$GIT_TOKEN" ]; then
-  git config --global credential.helper "store --file=/home/gituser/.git-credentials"
-  printf "https://x-access-token:%s@github.com\n" "$GIT_TOKEN" > /home/gituser/.git-credentials
+  git config --global credential.helper "store --file=/git/.git-credentials"
+  printf "https://x-access-token:%s@github.com\n" "$GIT_TOKEN" > /git/.git-credentials
 elif [ -n "$GIT_SSH_PRIVATE_KEY_BASE64" ]; then
-  mkdir -p /home/gituser/.ssh || true
-  echo "$GIT_SSH_PRIVATE_KEY_BASE64" | base64 -d > /home/gituser/.ssh/id_rsa
-  chmod 600 /home/gituser/.ssh/id_rsa || true
-  ssh-keyscan github.com >> /home/gituser/.ssh/known_hosts || true
-  git config --global core.sshCommand "ssh -i /home/gituser/.ssh/id_rsa -o UserKnownHostsFile=/home/gituser/.ssh/known_hosts"
+  mkdir -p /git/.ssh || true
+  echo "$GIT_SSH_PRIVATE_KEY_BASE64" | base64 -d > /git/.ssh/id_rsa
+  chmod 600 /git/.ssh/id_rsa || true
+  ssh-keyscan github.com >> /git/.ssh/known_hosts || true
+  git config --global core.sshCommand "ssh -i /git/.ssh/id_rsa -o UserKnownHostsFile=/git/.ssh/known_hosts"
 fi
 
 # Set up Git user
@@ -36,8 +36,8 @@ fi
 
 # Check if the subdir "content" is a git repository. For true: pull, add, commit, and push every $GIT_SYNC_INTERVAL to $GIT_REPO_URL with $GIT_BRANCH branch name. For false: clone $GIT_REPO_URL with $GIT_BRANCH branch name into "content", and push every $GIT_SYNC_INTERVAL to $GIT_REPO_URL with $GIT_BRANCH branch name.
 
-if [ -d "/home/gituser/content/.git" ]; then
-  cd /home/gituser/content || exit
+if [ -d "/git/content/.git" ]; then
+  cd /git/content || exit
   while true; do
     if ! git pull; then
       echo "Error: Failed to pull changes from remote repository" >&2
@@ -59,7 +59,7 @@ if [ -d "/home/gituser/content/.git" ]; then
     sleep "$GIT_SYNC_INTERVAL"
   done
 else
-  if ! git clone --single-branch --branch "$GIT_BRANCH" "$GIT_REPO_URL" /home/gituser/content && chmod -Rf 777 /home/gituser/content; then
+  if ! git clone --single-branch --branch "$GIT_BRANCH" "$GIT_REPO_URL" /git/content && chmod -Rf 777 /git/content; then
     echo "Error: Failed to clone remote repository $GIT_REPO_URL with branch $GIT_BRANCH" >&2
     exit 1
   fi

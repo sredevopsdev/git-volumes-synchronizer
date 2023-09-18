@@ -9,6 +9,6 @@ services:
     env_file:
       - .env
     volumes:
-      - ./gituser:/home/gituser:rw
+      - ./git:/git:rw
   
   
