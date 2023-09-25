@@ -10,11 +10,11 @@ export GIT_USER_EMAIL="$GIT_USER_EMAIL"
 
 # Set up Git credentials
 if [ -n "$GIT_USERNAME" ] && [ -n "$GIT_PASSWORD" ]; then
-  git config --global credential.helper "store --file=/git/.git-credentials"
-  printf "https://%s:%s@github.com\n" "$GIT_USERNAME" "$GIT_PASSWORD" > /git/.git-credentials
+  git config --global credential.helper "store --file=/tmp/.git-credentials"
+  printf "https://%s:%s@github.com\n" "$GIT_USERNAME" "$GIT_PASSWORD" > /tmp/.git-credentials
 elif [ -n "$GIT_TOKEN" ]; then
-  git config --global credential.helper "store --file=/git/.git-credentials"
-  printf "https://x-access-token:%s@github.com\n" "$GIT_TOKEN" > /git/.git-credentials || true
+  git config --global credential.helper "store --file=/tmp/.git-credentials"
+  printf "https://x-access-token:%s@github.com\n" "$GIT_TOKEN" > /tmp/.git-credentials || true
 elif [ -n "$GIT_SSH_PRIVATE_KEY_BASE64" ]; then
   mkdir -p /git/.ssh || true
   echo "$GIT_SSH_PRIVATE_KEY_BASE64" | base64 -d > /git/.ssh/id_rsa

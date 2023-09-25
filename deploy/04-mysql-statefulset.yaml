@@ -4,75 +4,57 @@ metadata:
   name: mysql-gitsync
   namespace: gitsync
 spec:
-  serviceName: mysql-gitsync
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Retain
+  podManagementPolicy: OrderedReady
   replicas: 1
+  revisionHistoryLimit: 5
   selector:
     matchLabels:
       app: mysql-gitsync
+
+  serviceName: mysql-gitsync
   template:
     metadata:
       labels:
         app: mysql-gitsync
     spec:
-      nodeSelector:
-        kubernetes.io/arch: amd64
-      securityContext:
-        # Set this to any valid GID, and two things happen:
-        #   1) The volume "mysql-from-git" is group-owned by this GID.
-        #   2) This GID is added to each container.
-        fsGroup: 27 # "27" is the GID for mysql docker.io/mysql/mysql-server:8.0.32-1.2.11-server
-      volumes:
-      - name: mysql-from-git
-        emptyDir:
-          sizeLimit: "2Gi"
-          medium: ""
-
-      initContainers:
-      - name: git-sync-init
-        image: ghcr.io/sredevopsdev/git-volumes-synchronizer:latest
-        imagePullPolicy: Always
-        envFrom:
-        - secretRef:
-            name: git-sync-credentials # git-credentials-repo is the name of the secret containing the git credentials GITSYNC_PASSWORD and GITSYNC_USERNAME
-        resources:
-          limits:
-            cpu: 1000m
-            memory: 512Mi
-          requests:
-            cpu: 100m
-            memory: 100Mi
-        volumeMounts:
-        - name: mysql-from-git
-          mountPath: /git # this is the path where the git-sync container will store the mysql data
-          readOnly: false
-          mountPropagation: HostToContainer
-
       containers:
       - name: mysql-gitsync
         envFrom:
         - secretRef:
-            name: gitsync-mysql-credentials # gitsync-mysql-credentials is the name of the secret containing the mysql credentials MYSQL_DATABASE, MYSQL_PASSWORD, MYSQL_ROOT_HOST, MYSQL_ROOT_PASSWORD, MYSQL_USER, MYSQL_USER_HOST
+            name: gitsync-mysql-credentials
         image: docker.io/mysql/mysql-server:8.0.32-1.2.11-server
         imagePullPolicy: IfNotPresent
+        livenessProbe:
+          exec:
+            command:
+            - /bin/bash
+            - -c
+            - |
+              mysql -u root -p${MYSQL_ROOT_PASSWORD} -e "show databases;" || exit 1
+          failureThreshold: 3
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
         ports:
         - containerPort: 3306
+          name: mysql-gs
           protocol: TCP
-          name: mysql-gitsync
-
-        volumeMounts:
-        - name: mysql-from-git
-          mountPath: /var/lib/mysql # this is the path where mysql stores its data
-          subPath: content/mysql # subpath relative to the volume defined in the container image and in this case a subfolder in the repo itself
-          readOnly: false
-          mountPropagation: HostToContainer
-
-
-        securityContext:
-          readOnlyRootFilesystem: false # mysql needs to write to its data directory
-          runAsGroup: 27 # "27" is the GID for mysql docker.io/mysql/mysql-server:8.0.32-1.2.11-server
-          runAsNonRoot: false # mysql needs to run as root
-
-
+        readinessProbe:
+          exec:
+            command:
+            - /bin/bash
+            - -c
+            - |
+              mysql -u root -p${MYSQL_ROOT_PASSWORD} -e "show databases;" || exit 1
+          failureThreshold: 3
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
         resources:
           limits:
             cpu: "1"
@@ -80,26 +62,133 @@ spec:
           requests:
             cpu: "0"
             memory: "0"
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsGroup: 10001
+          runAsNonRoot: true
+          runAsUser: 10001
 
-      # sidecarContainers:
+
+        startupProbe:
+          exec:
+            command:
+            - /bin/bash
+            - -c
+            - |
+              mysql -u root -p${MYSQL_ROOT_PASSWORD} -e "show databases;" || exit 1
+          failureThreshold: 3
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+
+        volumeMounts:
+        - mountPath: /var/lib/mysql
+          mountPropagation: HostToContainer
+          name: mysql-gitsync-vol
+          subPath: content
+          readOnly: false
+
       - name: git-sync-sidecar
-        image: ghcr.io/sredevopsdev/git-volumes-synchronizer:latest
-        imagePullPolicy: Always
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsGroup: 10001
+          runAsNonRoot: true
+          runAsUser: 10001
+
         envFrom:
         - secretRef:
-            name: git-sync-credentials
+            name: git-credentials-repo
+        image: ghcr.io/sredevopsdev/git-volumes-synchronizer:latest
+        imagePullPolicy: Always
+        livenessProbe:
+          exec:
+            command:
+            - /bin/bash
+            - -c
+            - |
+              cd /git/content && git rev-parse --is-inside-work-tree && git status || exit 1
+          failureThreshold: 3
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+        readinessProbe:
+          exec:
+            command:
+            - /bin/bash
+            - -c
+            - |
+              cd /git/content && git rev-parse --is-inside-work-tree && git status || exit 1
+          failureThreshold: 3
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
         resources:
           limits:
-            cpu: 1000m
+            cpu: "1"
             memory: 512Mi
           requests:
-            cpu: 100m
-            memory: 100Mi
+            cpu: 200m
+            memory: 256Mi
         volumeMounts:
-        - name: mysql-from-git
-          mountPath: /git # this is the path where the git-sync container will store the mysql data
-          readOnly: false
+        - mountPath: /git
           mountPropagation: HostToContainer
+          name: mysql-gitsync-vol
+          readOnly: false
+
+      dnsPolicy: ClusterFirst
+
+      initContainers:
+      - name: git-sync-init
+        envFrom:
+        - secretRef:
+            name: git-credentials-repo
+        image: ghcr.io/sredevopsdev/git-volumes-synchronizer:latest
+        imagePullPolicy: Always
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsGroup: 10001
+          runAsNonRoot: true
+          runAsUser: 10001
+
+        resources:
+          limits:
+            cpu: "1"
+            memory: 512Mi
+          requests:
+            cpu: 200m
+            memory: 256Mi
+
+        volumeMounts:
+        - mountPath: /git
+          mountPropagation: HostToContainer
+          name: mysql-gitsync-vol
+          readOnly: false
 
 
+      nodeSelector:
+        kubernetes.io/arch: amd64
 
+      restartPolicy: Always
+
+      volumes:
+      - emptyDir:
+          sizeLimit: 5Gi
+        name: mysql-gitsync-vol
+
+      securityContext:
+        fsGroup: 10001
+        runAsGroup: 10001
+        runAsNonRoot: true
+        runAsUser: 10001
+
+
+  updateStrategy:
+    rollingUpdate:
+      partition: 0
+    type: RollingUpdate

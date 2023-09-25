@@ -18,11 +18,10 @@ COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 
-
 # Create a non-root user
 RUN useradd -m -s /bin/bash gituser && \
     mkdir -p /git && \
-    chmod 755 /git
+    chmod 777 /git
 
 # Create a volume
 VOLUME /git

@@ -27,7 +27,7 @@ spec:
   - port: 3306
     protocol: TCP
     targetPort: 3306
-    name: mysql-gitsync
+    name: mysql-gs
   type: ClusterIP
   selector:
     app: mysql-gitsync
