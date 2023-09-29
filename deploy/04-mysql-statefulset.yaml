@@ -5,7 +5,7 @@ metadata:
   namespace: gitsync
 spec:
   persistentVolumeClaimRetentionPolicy:
-    whenDeleted: Retain
+    whenDeleted: Delete
     whenScaled: Retain
   podManagementPolicy: OrderedReady
   replicas: 1
@@ -65,9 +65,8 @@ spec:
         securityContext:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
-          runAsGroup: 10001
           runAsNonRoot: true
-          runAsUser: 10001
+
 
 
         startupProbe:
@@ -90,55 +89,32 @@ spec:
           subPath: content
           readOnly: false
 
-      - name: git-sync-sidecar
-        securityContext:
-          allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: true
-          runAsGroup: 10001
-          runAsNonRoot: true
-          runAsUser: 10001
 
-        envFrom:
-        - secretRef:
-            name: git-credentials-repo
-        image: ghcr.io/sredevopsdev/git-volumes-synchronizer:latest
-        imagePullPolicy: Always
-        livenessProbe:
-          exec:
-            command:
-            - /bin/bash
-            - -c
-            - |
-              cd /git/content && git rev-parse --is-inside-work-tree && git status || exit 1
-          failureThreshold: 3
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          successThreshold: 1
-          timeoutSeconds: 5
-        readinessProbe:
-          exec:
-            command:
-            - /bin/bash
-            - -c
-            - |
-              cd /git/content && git rev-parse --is-inside-work-tree && git status || exit 1
-          failureThreshold: 3
-          initialDelaySeconds: 5
-          periodSeconds: 10
-          successThreshold: 1
-          timeoutSeconds: 5
-        resources:
-          limits:
-            cpu: "1"
-            memory: 512Mi
-          requests:
-            cpu: 200m
-            memory: 256Mi
-        volumeMounts:
-        - mountPath: /git
-          mountPropagation: HostToContainer
-          name: mysql-gitsync-vol
-          readOnly: false
+      # - name: git-sync-sidecar
+      #   securityContext:
+      #     allowPrivilegeEscalation: false
+      #     readOnlyRootFilesystem: true
+      #     fsGroup: 27
+
+      #   envFrom:
+      #   - secretRef:
+      #       name: git-credentials-repo
+      #   # image: ghcr.io/sredevopsdev/git-volumes-synchronizer:latest
+      #   image: bitnami/git:2-debian-11
+
+      #   imagePullPolicy: IfNotPresent
+      #   resources:
+      #     limits:
+      #       cpu: "1"
+      #       memory: 512Mi
+      #     requests:
+      #       cpu: 200m
+      #       memory: 256Mi
+      #   volumeMounts:
+      #   - mountPath: /git
+      #     mountPropagation: HostToContainer
+      #     name: mysql-gitsync-vol
+      #     readOnly: false
 
       dnsPolicy: ClusterFirst
 
@@ -147,14 +123,16 @@ spec:
         envFrom:
         - secretRef:
             name: git-credentials-repo
-        image: ghcr.io/sredevopsdev/git-volumes-synchronizer:latest
-        imagePullPolicy: Always
+        # image: ghcr.io/sredevopsdev/git-volumes-synchronizer:latest
+        image: bitnami/git:2-debian-11
+
+        command: ["bash", "-c", "git", "clone", "--single-branch", "--branch=$GIT_BRANCH", "$GIT_REPO_URL", "/git/content"]
+        imagePullPolicy: IfNotPresent
         securityContext:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
-          runAsGroup: 10001
           runAsNonRoot: true
-          runAsUser: 10001
+          runAsUser: 1000
 
         resources:
           limits:
@@ -169,6 +147,7 @@ spec:
           mountPropagation: HostToContainer
           name: mysql-gitsync-vol
           readOnly: false
+
 
 
       nodeSelector:
@@ -182,10 +161,8 @@ spec:
         name: mysql-gitsync-vol
 
       securityContext:
-        fsGroup: 10001
-        runAsGroup: 10001
+        fsGroup: 27
         runAsNonRoot: true
-        runAsUser: 10001
 
 
   updateStrategy:
