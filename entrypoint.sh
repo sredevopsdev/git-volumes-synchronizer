@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -ex 
+set -e
 export GIT_USERNAME="$GIT_USERNAME"
 export GIT_TOKEN="$GIT_TOKEN"
 export GIT_SSH_PRIVATE_KEY_BASE64="$GIT_SSH_PRIVATE_KEY_BASE64"
@@ -43,22 +43,22 @@ if [ -d "/git/content/.git" ]; then
   git config --global --add safe.directory /git/content
   while true; do
     if ! git pull; then
-      echo "Error: Failed to pull changes from remote repository" >&2
+      echo "Couldn't pull changes from remote repository" >&2
       # exit 1
     fi
     if ! git add .; then
-      echo "Error: Failed to add changes to local repository" >&2
+      echo "Couldn't add changes from local repository" >&2
       # exit 1
     fi
-    if ! git commit -m "Update from gitsync at $(date)"; then
-      echo "Error: Failed to commit changes to local repository" >&2
+    if ! git commit -m "Update from git-volumes-synchronizer at $(date)"; then
+      echo "Couldn't commit changes from local repository" >&2
       # exit 1
     fi
-    if ! git push --set-upstream origin "$GIT_BRANCH"; then
-      echo "Error: Failed to push changes to remote repository" >&2
+    if ! git push; then
+      echo "Couldn't push changes to remote repository" >&2
       exit 1
     fi
-    echo "Changes synced successfully at $(date)"
+    echo "Changes synced successfully at $(date) with branch $GIT_BRANCH"
     sleep "$GIT_SYNC_INTERVAL"
   done
 else
@@ -66,7 +66,7 @@ else
     echo "Error: Failed to clone remote repository $GIT_REPO_URL with branch $GIT_BRANCH" >&2
     exit 1
   fi
-  echo "Repository cloned successfully at $(date)"
+  echo "Repository $GIT_REPO_URL cloned successfully with branch $GIT_BRANCH"
 fi
 
 exit 0

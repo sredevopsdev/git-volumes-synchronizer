@@ -1,6 +1,6 @@
 FROM ubuntu:mantic
 
-# Install Git
+LABEL org.opencontainers.image.source="https://github.com/sredevopsdev/git-volumes-synchronizer"
 
 ENV DEBIAN_FRONTEND=noninteractive
 

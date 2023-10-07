@@ -19,120 +19,23 @@ spec:
     metadata:
       labels:
         app: mysql-gitsync
+      namespace: gitsync
     spec:
-      containers:
-      - name: mysql-gitsync
-        envFrom:
-        - secretRef:
-            name: gitsync-mysql-credentials
-        image: docker.io/mysql/mysql-server:8.0.32-1.2.11-server
-        imagePullPolicy: IfNotPresent
-        livenessProbe:
-          exec:
-            command:
-            - /bin/bash
-            - -c
-            - |
-              mysql -u root -p${MYSQL_ROOT_PASSWORD} -e "show databases;" || exit 1
-          failureThreshold: 3
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          successThreshold: 1
-          timeoutSeconds: 5
-        ports:
-        - containerPort: 3306
-          name: mysql-gs
-          protocol: TCP
-        readinessProbe:
-          exec:
-            command:
-            - /bin/bash
-            - -c
-            - |
-              mysql -u root -p${MYSQL_ROOT_PASSWORD} -e "show databases;" || exit 1
-          failureThreshold: 3
-          initialDelaySeconds: 5
-          periodSeconds: 10
-          successThreshold: 1
-          timeoutSeconds: 5
-        resources:
-          limits:
-            cpu: "1"
-            memory: 1Gi
-          requests:
-            cpu: "0"
-            memory: "0"
-        securityContext:
-          allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: true
-          runAsNonRoot: true
-
-
-
-        startupProbe:
-          exec:
-            command:
-            - /bin/bash
-            - -c
-            - |
-              mysql -u root -p${MYSQL_ROOT_PASSWORD} -e "show databases;" || exit 1
-          failureThreshold: 3
-          initialDelaySeconds: 5
-          periodSeconds: 10
-          successThreshold: 1
-          timeoutSeconds: 5
-
-        volumeMounts:
-        - mountPath: /var/lib/mysql
-          mountPropagation: HostToContainer
-          name: mysql-gitsync-vol
-          subPath: content
-          readOnly: false
-
-
-      # - name: git-sync-sidecar
-      #   securityContext:
-      #     allowPrivilegeEscalation: false
-      #     readOnlyRootFilesystem: true
-      #     fsGroup: 27
-
-      #   envFrom:
-      #   - secretRef:
-      #       name: git-credentials-repo
-      #   # image: ghcr.io/sredevopsdev/git-volumes-synchronizer:latest
-      #   image: bitnami/git:2-debian-11
-
-      #   imagePullPolicy: IfNotPresent
-      #   resources:
-      #     limits:
-      #       cpu: "1"
-      #       memory: 512Mi
-      #     requests:
-      #       cpu: 200m
-      #       memory: 256Mi
-      #   volumeMounts:
-      #   - mountPath: /git
-      #     mountPropagation: HostToContainer
-      #     name: mysql-gitsync-vol
-      #     readOnly: false
-
-      dnsPolicy: ClusterFirst
+      securityContext:
+        fsGroup: 1001
 
       initContainers:
       - name: git-sync-init
         envFrom:
         - secretRef:
             name: git-credentials-repo
-        # image: ghcr.io/sredevopsdev/git-volumes-synchronizer:latest
-        image: bitnami/git:2-debian-11
-
-        command: ["bash", "-c", "git", "clone", "--single-branch", "--branch=$GIT_BRANCH", "$GIT_REPO_URL", "/git/content"]
+        image: ghcr.io/sredevopsdev/git-volumes-synchronizer:tests
+        # image: bitnami/git:2-debian-11
         imagePullPolicy: IfNotPresent
         securityContext:
           allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: true
-          runAsNonRoot: true
-          runAsUser: 1000
+          #readOnlyRootFilesystem: true
+          #runAsNonRoot: true
 
         resources:
           limits:
@@ -149,6 +52,66 @@ spec:
           readOnly: false
 
 
+      containers:
+      - name: mysql-gitsync
+        envFrom:
+        - secretRef:
+            name: gitsync-mysql-credentials
+        image: docker.io/mysql/mysql-server:8.0.32-1.2.11-server
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3306
+          name: mysql-gs
+          protocol: TCP
+        resources:
+          limits:
+            cpu: "1"
+            memory: 1Gi
+          requests:
+            cpu: "0"
+            memory: "0"
+        securityContext:
+          allowPrivilegeEscalation: false
+          #readOnlyRootFilesystem: true
+          #runAsNonRoot: true
+
+        volumeMounts:
+        - mountPath: /var/lib/mysql
+          mountPropagation: HostToContainer
+          name: mysql-gitsync-vol
+          subPath: content
+          readOnly: false
+
+      - name: git-sync-sidecar
+        securityContext:
+          allowPrivilegeEscalation: false
+          #readOnlyRootFilesystem: true
+          #runAsNonRoot: true
+
+        envFrom:
+        - secretRef:
+            name: git-credentials-repo
+        image: ghcr.io/sredevopsdev/git-volumes-synchronizer:tests
+        # image: bitnami/git:2-debian-11
+        imagePullPolicy: IfNotPresent
+        resources:
+          limits:
+            cpu: "1"
+            memory: 512Mi
+          requests:
+            cpu: 200m
+            memory: 256Mi
+        volumeMounts:
+        - mountPath: /git
+          mountPropagation: HostToContainer
+          name: mysql-gitsync-vol
+          readOnly: false
+
+
+      dnsPolicy: ClusterFirst
+
+
+
 
       nodeSelector:
         kubernetes.io/arch: amd64
@@ -156,16 +119,6 @@ spec:
       restartPolicy: Always
 
       volumes:
-      - emptyDir:
+      - name: mysql-gitsync-vol
+        emptyDir:
           sizeLimit: 5Gi
-        name: mysql-gitsync-vol
-
-      securityContext:
-        fsGroup: 27
-        runAsNonRoot: true
-
-
-  updateStrategy:
-    rollingUpdate:
-      partition: 0
-    type: RollingUpdate

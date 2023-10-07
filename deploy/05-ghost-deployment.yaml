@@ -14,6 +14,9 @@ spec:
       labels:
         app: ghostk3s
     spec:
+      securityContext:
+        fsGroup: 1001
+
       terminationGracePeriodSeconds: 30
       nodeSelector:
         kubernetes.io/arch: amd64
@@ -36,7 +39,7 @@ spec:
 
       initContainers:
       - name: git-sync-init
-        image: ghcr.io/sredevopsdev/git-volumes-synchronizer:latest
+        image: ghcr.io/sredevopsdev/git-volumes-synchronizer:tests
         imagePullPolicy: Always
         envFrom:
         - secretRef:
@@ -55,16 +58,14 @@ spec:
           mountPropagation: HostToContainer
 
 
-
-
       containers:
-      - name: ghostk3s
+      - name: ghost-gitsync
         image: ghcr.io/sredevopsdev/ghost-on-kubernetes:main
         imagePullPolicy: Always
         resources:
           requests:
-            memory: 1Gi
-            cpu: 1000m
+            memory: 0Mi
+            cpu: 0m
           limits:
             memory: 2Gi
             cpu: 2000m
@@ -108,8 +109,8 @@ spec:
           readOnly: false
       # sidecarContainers:
       - name: git-sync-sidecar
-        image: ghcr.io/sredevopsdev/git-volumes-synchronizer:latest
-        imagePullPolicy: Always
+        image: ghcr.io/sredevopsdev/git-volumes-synchronizer:tests
+        imagePullPolicy: IfNotPresent
         envFrom:
         - secretRef:
             name: git-sync-ghost # git-credentials-repo is the name of the secret containing the git credentials GITSYNC_PASSWORD and GITSYNC_USERNAME
@@ -118,8 +119,8 @@ spec:
             cpu: 1000m
             memory: 512Mi
           requests:
-            cpu: 100m
-            memory: 100Mi
+            cpu: 0m
+            memory: 0Mi
         volumeMounts:
         - name: ghost-from-git
           mountPath: /git # this is the path where the git-sync container will store the mysql data
