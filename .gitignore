@@ -137,3 +137,4 @@ gituser/**
 deploy/04-mysql-statefulset.yaml
 git/.git-credentials
 git/content
+git/**

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e
+set -ex 
 export GIT_USERNAME="$GIT_USERNAME"
 export GIT_TOKEN="$GIT_TOKEN"
 export GIT_SSH_PRIVATE_KEY_BASE64="$GIT_SSH_PRIVATE_KEY_BASE64"
@@ -9,7 +9,7 @@ export GIT_SYNC_INTERVAL="$GIT_SYNC_INTERVAL"
 export GIT_USER_EMAIL="$GIT_USER_EMAIL"
 
 # sleep 3600
-chmod -Rfv 777 /git/ || echo "Error: Failed to chmod /git" >&2 && true
+chmod -Rfv 777 /git || echo "Error: Failed to chmod /git" >&2 && true
 
 # Set up Git credentials
 if [ -n "$GIT_USERNAME" ] && [ -n "$GIT_PASSWORD" ]; then
@@ -62,7 +62,7 @@ if [ -d "/git/content/.git" ]; then
     sleep "$GIT_SYNC_INTERVAL"
   done
 else
-  if ! git clone --single-branch --branch "$GIT_BRANCH" "$GIT_REPO_URL" /git/content && chmod -Rf 777 /git/content; then
+  if ! git clone --single-branch --branch "$GIT_BRANCH" "$GIT_REPO_URL" /git/content && chmod -Rf 777 /git; then
     echo "Error: Failed to clone remote repository $GIT_REPO_URL with branch $GIT_BRANCH" >&2
     exit 1
   fi
