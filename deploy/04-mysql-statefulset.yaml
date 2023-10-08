@@ -21,6 +21,11 @@ spec:
         app: mysql-gitsync
       namespace: gitsync
     spec:
+      volumes:
+      - name: mysql-gitsync-vol
+        emptyDir:
+          sizeLimit: 5Gi
+
       securityContext:
         fsGroup: 1001
 
@@ -29,13 +34,8 @@ spec:
         envFrom:
         - secretRef:
             name: git-credentials-repo
-        image: ghcr.io/sredevopsdev/git-volumes-synchronizer:tests
-        # image: bitnami/git:2-debian-11
-        imagePullPolicy: IfNotPresent
-        securityContext:
-          allowPrivilegeEscalation: false
-          #readOnlyRootFilesystem: true
-          #runAsNonRoot: true
+        image: ghcr.io/sredevopsdev/git-volumes-synchronizer:v2.0.1
+        imagePullPolicy: Always
 
         resources:
           limits:
@@ -50,7 +50,6 @@ spec:
           mountPropagation: HostToContainer
           name: mysql-gitsync-vol
           readOnly: false
-
 
       containers:
       - name: mysql-gitsync
@@ -70,10 +69,6 @@ spec:
           requests:
             cpu: "0"
             memory: "0"
-        securityContext:
-          allowPrivilegeEscalation: false
-          #readOnlyRootFilesystem: true
-          #runAsNonRoot: true
 
         volumeMounts:
         - mountPath: /var/lib/mysql
@@ -91,7 +86,7 @@ spec:
         envFrom:
         - secretRef:
             name: git-credentials-repo
-        image: ghcr.io/sredevopsdev/git-volumes-synchronizer:tests
+        image: ghcr.io/sredevopsdev/git-volumes-synchronizer:v2.0.1
         # image: bitnami/git:2-debian-11
         imagePullPolicy: IfNotPresent
         resources:
@@ -117,8 +112,3 @@ spec:
         kubernetes.io/arch: amd64
 
       restartPolicy: Always
-
-      volumes:
-      - name: mysql-gitsync-vol
-        emptyDir:
-          sizeLimit: 5Gi

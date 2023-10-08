@@ -1,18 +1,18 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ghostk3s
+  name: ghostsync
   namespace: gitsync
 spec:
   selector:
     matchLabels:
-      app: ghostk3s
+      app: ghostsync
   replicas: 1
   template:
     metadata:
       namespace: gitsync
       labels:
-        app: ghostk3s
+        app: ghostsync
     spec:
       securityContext:
         fsGroup: 1001
@@ -39,7 +39,7 @@ spec:
 
       initContainers:
       - name: git-sync-init
-        image: ghcr.io/sredevopsdev/git-volumes-synchronizer:tests
+        image: ghcr.io/sredevopsdev/git-volumes-synchronizer:v2.0.1
         imagePullPolicy: Always
         envFrom:
         - secretRef:
@@ -88,7 +88,7 @@ spec:
         ports:
         - containerPort: 2368
           protocol: TCP
-          name: ghostk3s
+          name: ghostsync
         env:
         - name: NODE_ENV
           value: production
@@ -109,7 +109,7 @@ spec:
           readOnly: false
       # sidecarContainers:
       - name: git-sync-sidecar
-        image: ghcr.io/sredevopsdev/git-volumes-synchronizer:tests
+        image: ghcr.io/sredevopsdev/git-volumes-synchronizer:v2.0.1
         imagePullPolicy: IfNotPresent
         envFrom:
         - secretRef:
