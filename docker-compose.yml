@@ -10,11 +10,11 @@ services:
       dockerfile: Dockerfile
     # image: ghcr.io/sredevopsdev/git-volumes-synchronizer:latest
     container_name: git-volumes-synchronizer
-    restart: always
+    restart: unless-stopped
     env_file:
       - .env
     volumes:
-      - ./git:/git:rw
+      - ./git:/git
   mysql:
     image: docker.io/mysql/mysql-server:8.0.32-1.2.11-server
     container_name: mysql
@@ -27,13 +27,4 @@ services:
       - 3306:3306
     depends_on:
       - git
-
-    environment:
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - MYSQL_DATABASE=${MYSQL_DATABASE}
-      - MYSQL_USER=${MYSQL_USER}
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
-      - MYSQL_ROOT_HOST=%
-      - MYSQL_HOST=%
-      - MYSQL_PORT=3306    
-
+# Wait git to start before mysql

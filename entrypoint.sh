@@ -9,7 +9,7 @@ export GIT_SYNC_INTERVAL="$GIT_SYNC_INTERVAL"
 export GIT_USER_EMAIL="$GIT_USER_EMAIL"
 
 # sleep 3600
-chmod -Rfv 777 /git || echo "Error: Failed to chmod /git" >&2 && true
+# chmod -Rfv 777 /git || echo "Error: Failed to chmod /git" >&2 && true
 
 # Set up Git credentials
 if [ -n "$GIT_USERNAME" ] && [ -n "$GIT_PASSWORD" ]; then
@@ -38,31 +38,31 @@ fi
 # Check if the subdir "content" is a git repository. For true: pull, add, commit, and push every $GIT_SYNC_INTERVAL to $GIT_REPO_URL with $GIT_BRANCH branch name. For false: clone $GIT_REPO_URL with $GIT_BRANCH branch name into "content", and push every $GIT_SYNC_INTERVAL to $GIT_REPO_URL with $GIT_BRANCH branch name.
 
 if [ -d "/git/content/.git" ]; then
-  cd /git/content || exit
   #  Add git safe directory
-  git config --global --add safe.directory /git/content
   while true; do
+    cd /git/content || echo "Error: Failed to cd /git/content" >&2 && true
+    git config --global --add safe.directory /git/content || echo "Error: Failed to add safe.directory" >&2 && true
     if ! git pull; then
-      echo "Couldn't pull changes from remote repository" >&2
+      echo "Couldn't pull changes from remote repository" >&2 || true
       # exit 1
     fi
     if ! git add .; then
-      echo "Couldn't add changes from local repository" >&2
+      echo "Couldn't add changes from local repository" >&2 || true
       # exit 1
     fi
     if ! git commit -m "Update from git-volumes-synchronizer at $(date)"; then
-      echo "Couldn't commit changes from local repository" >&2
+      echo "Couldn't commit changes from local repository" >&2 || true
       # exit 1
     fi
     if ! git push; then
-      echo "Couldn't push changes to remote repository" >&2
-      exit 1
+      echo "Couldn't push changes to remote repository" >&2 || true
+      # exit 1
     fi
     echo "Changes synced successfully at $(date) with branch $GIT_BRANCH"
     sleep "$GIT_SYNC_INTERVAL"
   done
 else
-  if ! git clone --single-branch --branch "$GIT_BRANCH" "$GIT_REPO_URL" /git/content && chmod -Rf 777 /git; then
+  if ! git clone --single-branch --branch "$GIT_BRANCH" "$GIT_REPO_URL" /git/content; then
     echo "Error: Failed to clone remote repository $GIT_REPO_URL with branch $GIT_BRANCH" >&2
     exit 1
   fi

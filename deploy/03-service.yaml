@@ -1,19 +1,19 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: ghostk3s
+  name: ghostsync
   namespace: gitsync
   labels:
-    app: ghostk3s
+    app: ghostsync
 spec:
   ports:
   - port: 2368
     protocol: TCP
     targetPort: 2368
-    name: ghostk3s
+    name: ghostsync
   type: ClusterIP
   selector:
-    app: ghostk3s
+    app: ghostsync
 ---
 apiVersion: v1
 kind: Service
