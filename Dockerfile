@@ -1,4 +1,4 @@
-FROM ubuntu:mantic
+FROM ubuntu:mantic-20231011
 
 LABEL org.opencontainers.image.source="https://github.com/sredevopsdev/git-volumes-synchronizer"
 
